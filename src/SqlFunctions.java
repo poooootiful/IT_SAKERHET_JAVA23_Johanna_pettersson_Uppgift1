@@ -6,22 +6,34 @@ import java.sql.Statement;
 
 
 public class SqlFunctions {
-    public static void createUser (String username, String email, String password){
-        String passwordhash ="";
+    public static byte[] salt;
+
+    static {
         try {
-            //make a hash for the password with SHA-256 algorithm
-            passwordhash = hashing.generateHash(password, "SHA-256");
-            System.out.println("SHA-256 hash: " + passwordhash);
+            salt = hashing.generateSalt();
         } catch (NoSuchAlgorithmException e) {
-            System.out.println("Fel: Algoritmen finns inte.");
+            throw new RuntimeException(e);
         }
+    }
+
+    ;
+
+    public static void createUser (String username, String email, String password){
+        String passwordhashed ="";
+        //make salted hash
+        try {
+            passwordhashed = hashing.generateHash(password,salt, "SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+
         Connection connection = DatabaseConnect.getConnection();
         if (connection == null) {
             System.out.println("Could not connect");
             System.exit(-1);
         }
 
-        String sql = "INSERT into users (username, email, password)VALUES ('"+username+"', '"+email+"', '"+passwordhash+"')";
+        String sql = "INSERT into users (username, email, password)VALUES ('"+username+"', '"+email+"', '"+passwordhashed+"')";
 
         try {
             Statement statement = connection.createStatement();
